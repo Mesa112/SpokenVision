@@ -9,7 +9,6 @@ def load_model():
     model: Loaded segmentation model
     feature_extractor: Feature extractor for preprocessing images
     """
-    # Using a public segmentation model that doesn't require authentication
     model_name = "nvidia/segformer-b0-finetuned-ade-512-512"
     
     model = SegformerForSemanticSegmentation.from_pretrained(model_name)
@@ -58,7 +57,6 @@ def visualize_segmentation(image_path, segmentation_map):
     image = Image.open(image_path)
     segmentation_map_np = segmentation_map.byte().cpu().numpy()
     
-    # Create a colorful visualization
     segmentation_map_pil = Image.fromarray(segmentation_map_np)
     segmentation_map_pil.putpalette([i for _ in range(256) for i in range(256)]*3)
     
