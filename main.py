@@ -1,17 +1,20 @@
 from camera import CameraModule
 from object_detection import load_model, detect_objects
-from semantic_segmentaiton import load_model as load_segmentation_model
-from semantic_segmentaiton import predict_segmentation, visualize_segmentation
+from semantic_segmentation import load_model as load_segmentation_model
+from semantic_segmentation import predict_segmentation, visualize_segmentation
 import cv2
 import tempfile
 import numpy as np
 import os
 import torch.nn.functional as F
 
+from depth_estimation import load_depth_model, estimate_depth
+
 if __name__ == "__main__":
     model = load_model()
     model_segmentation, feature_extractor = load_segmentation_model()
-    print("Model loaded successfully.")
+    depth_model = load_depth_model()
+    print("Models loaded successfully.")
 
     camera_module = CameraModule(camera_index=0, use_depth=False)
     if not camera_module.initialize():
@@ -34,10 +37,16 @@ if __name__ == "__main__":
             #obj detector
             results = detect_objects(frame, model, conf_threshold=0.3)
 
+            #depth estimation (midas)
+            depth_map = estimate_depth(frame, depth_model)
+            # normalize and resize depth_map to match the frame size
+            depth_map_resized = cv2.resize(depth_map, (frame_width, frame_height))
+
             #save frame to a temp file
             with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as temp_file:
                 temp_file_path = temp_file.name
                 cv2.imwrite(temp_file_path, frame)
+
             # Perform semantic segmentation
             segmentation_map = predict_segmentation(temp_file_path, model_segmentation, feature_extractor)
 
@@ -71,6 +80,7 @@ if __name__ == "__main__":
 
             # Show the frame with detections
             cv2.imshow("Live YOLOv8 Detection", blended_frame)
+            cv2.imshow("Depth Map (Grayscale)", depth_map_resized)
 
             try:
                 os.remove(temp_file_path)

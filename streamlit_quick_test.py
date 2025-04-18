@@ -10,7 +10,7 @@ import time
 
 # Import your existing modules
 from object_detection import load_model as load_detection_model, detect_objects
-from semantic_segmentaiton import load_model as load_segmentation_model, predict_segmentation
+from SpokenVision.semantic_segmentation import load_model as load_segmentation_model, predict_segmentation
 
 def main():
     st.title("Real-time Object Detection and Segmentation")
