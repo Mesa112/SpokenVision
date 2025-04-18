@@ -1,7 +1,7 @@
 from camera import CameraModule
 from object_detection import load_model, detect_objects
-from semantic_segmentaiton import load_model as load_segmentation_model
-from semantic_segmentaiton import predict_segmentation, visualize_segmentation
+from semantic_segmentation import load_model as load_segmentation_model
+from semantic_segmentation import predict_segmentation, visualize_segmentation
 import cv2
 import tempfile
 import numpy as np
