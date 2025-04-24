@@ -10,12 +10,14 @@ import torch.nn.functional as F
 
 from depth_estimation import load_depth_model, estimate_depth
 from blip_image_captioning import load_blip_captioning_model, generate_caption
+from qwen_captioning import load_qwen_captioning_model, generate_qwen_caption
 
 if __name__ == "__main__":
     model = load_model()
     model_segmentation, feature_extractor = load_segmentation_model()
     depth_model = load_depth_model()
     blip_model = load_blip_captioning_model()
+    qwen_model = load_qwen_captioning_model()
     print("Models loaded successfully.")
 
     camera_module = CameraModule(camera_index=0, use_depth=False)
@@ -86,6 +88,7 @@ if __name__ == "__main__":
 
             print("========Outputs========")
             print("Caption:", generate_caption(frame, blip_model))
+            print("Qwen Caption:", generate_qwen_caption(frame, qwen_model))
             #Print object detection + depth results
             print("Object detection:")
             for box, label, score in zip(results["boxes"], results["labels"], results["scores"]):
