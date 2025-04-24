@@ -9,11 +9,15 @@ import os
 import torch.nn.functional as F
 
 from depth_estimation import load_depth_model, estimate_depth
+from blip_image_captioning import load_blip_captioning_model, generate_caption
+from qwen_captioning import load_qwen_captioning_model, generate_qwen_caption
 
 if __name__ == "__main__":
     model = load_model()
     model_segmentation, feature_extractor = load_segmentation_model()
     depth_model = load_depth_model()
+    blip_model = load_blip_captioning_model()
+    qwen_model = load_qwen_captioning_model()
     print("Models loaded successfully.")
 
     camera_module = CameraModule(camera_index=0, use_depth=False)
@@ -81,6 +85,30 @@ if __name__ == "__main__":
             # Show the frame with detections
             cv2.imshow("Live YOLOv8 Detection", blended_frame)
             cv2.imshow("Depth Map (Grayscale)", depth_map_resized)
+
+            print("========Outputs========")
+            print("Caption:", generate_caption(frame, blip_model))
+            print("Qwen Caption:", generate_qwen_caption(frame, qwen_model))
+            #Print object detection + depth results
+            print("Object detection:")
+            for box, label, score in zip(results["boxes"], results["labels"], results["scores"]):
+                x1, y1, x2, y2 = [int(coord) for coord in box]
+
+                # Clamp coordinates to be within depth_map size
+                x1 = max(0, min(x1, depth_map.shape[1] - 1))
+                x2 = max(0, min(x2, depth_map.shape[1] - 1))
+                y1 = max(0, min(y1, depth_map.shape[0] - 1))
+                y2 = max(0, min(y2, depth_map.shape[0] - 1))
+
+                # Slice the depth map for the region inside the box
+                object_depth = depth_map[y1:y2, x1:x2]
+
+                if object_depth.size > 0:
+                    average_depth = object_depth.mean()
+                    print(f"{label} ({score * 100:.2f}%) at [{x1}, {y1}, {x2}, {y2}] with depth {average_depth:.2f}")
+                else:
+                    print(f"{label} out of bounds")
+            print("========================")
 
             try:
                 os.remove(temp_file_path)
