@@ -11,8 +11,15 @@ def load_qwen_captioning_model():
     global qwen_processor 
     qwen_processor = AutoProcessor.from_pretrained("Qwen/Qwen2-VL-2B-Instruct")
     qwen_model = Qwen2VLForConditionalGeneration.from_pretrained(
-        "Qwen/Qwen2-VL-2B-Instruct", torch_dtype="auto", device_map="auto"
+        "Qwen/Qwen2-VL-2B-Instruct", torch_dtype="auto", device_map="auto", low_cpu_mem_usage=True
     )
+    # No tengo Nvidia GPU
+    # qwen_model = Qwen2VLForConditionalGeneration.from_pretrained(
+    #     "Qwen/Qwen2-VL-2B-Instruct",
+    #     torch_dtype=torch.bfloat16,
+    #     attn_implementation="flash_attention_2",
+    #     device_map="auto",
+    # )
     qwen_model.eval()
     return qwen_model
 
