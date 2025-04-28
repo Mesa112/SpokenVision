@@ -11,6 +11,7 @@ import torch.nn.functional as F
 from depth_estimation import load_depth_model, estimate_depth
 from blip_image_captioning import load_blip_captioning_model, generate_caption
 from qwen_captioning import load_qwen_captioning_model, generate_qwen_caption
+from kokoro_audio import text_to_audio, load_kokoro_model
 
 if __name__ == "__main__":
     model = load_model()
@@ -18,6 +19,7 @@ if __name__ == "__main__":
     depth_model = load_depth_model()
     blip_model = load_blip_captioning_model()
     qwen_model = load_qwen_captioning_model()
+    kokoro = load_kokoro_model()
     print("Models loaded successfully.")
 
     camera_module = CameraModule(camera_index=0, use_depth=False)
@@ -26,6 +28,7 @@ if __name__ == "__main__":
         exit()
 
     print("Press 'q' to exit.")
+    frame_counter = 1 
 
     try:
         while True:
@@ -87,8 +90,12 @@ if __name__ == "__main__":
             cv2.imshow("Depth Map (Grayscale)", depth_map_resized)
 
             print("========Outputs========")
-            print("Caption:", generate_caption(frame, blip_model))
-            print("Qwen Caption:", generate_qwen_caption(frame, qwen_model))
+            caption = generate_caption(frame, blip_model)
+            print("Caption:", caption)
+            # print("Qwen Caption:", generate_qwen_caption(frame, qwen_model))
+            text_to_audio(kokoro, caption, file_name=f"Frame_{frame_counter}")
+            frame_counter += 1
+
             #Print object detection + depth results
             print("Object detection:")
             for box, label, score in zip(results["boxes"], results["labels"], results["scores"]):
