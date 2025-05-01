@@ -7,7 +7,7 @@ import cv2
 import os
 import tempfile
 from typing import Optional
-
+import base64
 
 from object_detection import load_model, detect_objects
 from semantic_segmentation import load_model as load_segmentation_model, predict_segmentation
@@ -51,7 +51,8 @@ async def process_files(
         # Generate caption
         caption = generate_caption(frame, blip_model)
 
-        if audio:
+        if audio is not None: #same code as the else statement but later can modify for audio->text and input into captioning 
+            print("Audio file received.")
             # Get the system temp directory
             temp_dir = tempfile.gettempdir()
 
@@ -65,14 +66,35 @@ async def process_files(
 
             # audio output file path
             wav_output_path = os.path.join(audio_output_dir, "audio_output.wav")
+            with open(wav_output_path, "rb") as f:
+                audio_bytes = f.read()
+                encoded_audio = base64.b64encode(audio_bytes).decode("utf-8")
 
-            # return {
-            #     "caption": caption,
-            #     "audio_file": audio_data
-            # }
-            return FileResponse(wav_output_path, media_type="audio/wav", filename="audio_output.wav")
+            return JSONResponse(content={
+                "caption": caption,
+                "audio_base64": encoded_audio
+            })
         else:
-            return JSONResponse(status_code=200, content={"caption": caption})
+            temp_dir = tempfile.gettempdir()
+
+            audio_output_dir = os.path.join(temp_dir, "audio_output")
+            # Create the directory if it doesn't exist
+            if not os.path.exists(audio_output_dir):
+                os.makedirs(audio_output_dir)
+
+            # Converts caption to audio using Kokoro
+            text_to_audio(kokoro_model, caption, output_dir=audio_output_dir)
+
+            # audio output file path
+            wav_output_path = os.path.join(audio_output_dir, "audio_output.wav")
+            with open(wav_output_path, "rb") as f:
+                audio_bytes = f.read()
+                encoded_audio = base64.b64encode(audio_bytes).decode("utf-8")
+
+            return JSONResponse(content={
+                "caption": caption,
+                "audio_base64": encoded_audio
+            })
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
