@@ -28,7 +28,7 @@ def detect_objects(image, model, conf_threshold=0.5):
         raise ValueError("Invalid image input. Provide a PIL Image, file path, or numpy array")
     
     # Run inference with YOLO
-    results = model(image, conf=conf_threshold)
+    results = model(image, conf=conf_threshold, verbose=False)
     
     # Process results into a similar format as you were using before
     boxes = []

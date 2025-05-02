@@ -10,7 +10,7 @@ import time
 
 # Import your existing modules
 from object_detection import load_model as load_detection_model, detect_objects
-from SpokenVision.semantic_segmentation import load_model as load_segmentation_model, predict_segmentation
+from semantic_segmentation import load_model as load_segmentation_model, predict_segmentation
 
 def main():
     st.title("Real-time Object Detection and Segmentation")
@@ -143,7 +143,7 @@ def main():
             rgb_frame = cv2.cvtColor(blended_frame, cv2.COLOR_BGR2RGB)
             
             # Display frame in Streamlit
-            stframe.image(rgb_frame, channels="RGB", use_column_width=True)
+            stframe.image(rgb_frame, channels="RGB", use_container_width=True)
             
             # Small delay to prevent high CPU usage
             time.sleep(0.05)
