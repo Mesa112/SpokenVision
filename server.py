@@ -43,6 +43,7 @@ async def process_files(
     image: UploadFile = File(...),
     audio: Optional[UploadFile] = File(None)  # Optional audio file
 ):
+    print("Received input files.")
     try:
         contents = await image.read()
         nparr = np.frombuffer(contents, np.uint8)
