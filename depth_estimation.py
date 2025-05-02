@@ -1,6 +1,5 @@
 from PIL import Image
 import numpy as np
-import requests
 import torch
 import cv2
 
