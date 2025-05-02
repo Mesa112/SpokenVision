@@ -23,7 +23,61 @@ def load_qwen_captioning_model():
     qwen_model.eval()
     return qwen_model
 
-def generate_qwen_caption(frame, qwen_model):
+def generate_qwen_caption(frame, qwen_model, input=""):
+    if input == "":
+        text = """
+            You are an assistive technology that describes an image to a visually impaired 
+            person in a clear, helpful, and natural way.
+
+            Your task:
+            Convert a technical scene description into concise, 
+            easy-to-understand speech that helps the listener quickly 
+            understand their environment.
+
+            Instructions:
+
+            Start by describing what’s closest to the listener first, 
+            then move outward or deeper into the space.
+
+            Immediately identify and locate people or key objects 
+            in relation to the listener (e.g., “A person is standing directly in front of you…”).
+
+            Be specific about where things are using natural 
+            spatial language (left, right, behind, on the wall to your left, etc.).
+
+            Do not say “in the image,” “just so you know,” 
+            “it looks like,” or other filler phrases. Get straight to the point.
+
+            Clearly describe walls, doors, furniture, 
+            or objects with reference to their positions.
+
+            Mention anything a person might want to know 
+            for awareness or navigation—like obstacles or changes in the scene.
+
+            Keep the tone natural but focused. 
+            Use short, informative sentences.
+        """
+    else:
+        text = f"""
+            You are an assistive technology that describes an image to a visually impaired 
+            person in a clear, helpful, and natural way.
+
+            Focus on the user request: {input}
+
+            Your task:
+            Convert a technical scene description into concise, 
+            easy-to-understand speech that helps the listener quickly 
+            understand their environment.
+
+            Instructions:
+            Answer the user's request directly and clearly first. Then, if relevant, 
+            describe the rest of the scene from closest to furthest. 
+            Only describe what’s necessary to help the user. 
+            Do not add unrelated details.   
+
+            Keep the tone natural but focused. 
+            Use short, informative sentences.
+        """
     conversation = [
         {
             "role": "user",
@@ -31,7 +85,7 @@ def generate_qwen_caption(frame, qwen_model):
                 {
                     "type": "image",
                 },
-                {"type": "text", "text": "Describe this image."},
+                {"type": "text", "text": text},
             ],
         }
     ]

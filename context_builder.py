@@ -41,7 +41,8 @@ class ContextBuilder:
             spatial_relationships, 
             caption
         )
-        
+        print("objects_with_positions:", objects_with_positions)
+        print("spatial_relationships:", spatial_relationships)
         return scene_description
     
     def _process_objects(self, detection_results, depth_map):
