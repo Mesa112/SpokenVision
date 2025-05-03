@@ -42,9 +42,12 @@ def enhance_description_with_gpt(raw_description):
     
     try:
         # Create a system prompt for natural speech conversion
-        system_prompt = """You are an assistive technology that concisely describes the image to a visually impaired person. 
+        system_prompt = """
+            You are an assistive technology that concisely describes the image to a visually impaired person. 
             Convert the technical scene description into natural, concise, helpful speech that would immediately let a visually impaired person understand their environment.
             Instructions:
+            - Be specific about where things are using natural 
+                spatial language (left, right, behind, on the wall to your left, etc.).
             - Be informative but concise, aim to orient the listener quickly and effectively.
             - Using simple language and avoiding jargon
             - Using conversational tone
@@ -53,17 +56,18 @@ def enhance_description_with_gpt(raw_description):
             - If the direction isn’t known, omit the object unless it's essential.
             - Describing important objects and their spatial relationships naturally
             - Providing useful context that helps the person navigate and understand their environment
-            - Being concise but informative
+            - Be concise but informative
             - Using directional terms (left, right, in front, behind) that would be helpful for orientation
             - Mentioning any potential hazards or important changes in the scene
+            - keep it short and concise.
+            - Describe the scene in order based on object distance and primary focus.
             """
-
         # Call GPT to enhance the description
         response = openai_text_client.chat.completions.create(
             model="gpt-3.5-turbo",  # Changed to GPT-3.5-Turbo
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"Convert this technical description into natural speech: {raw_description}"}
+                {"role": "user", "content": f"Description: {raw_description}"}
             ],
             max_tokens=150,
             temperature=0.7
