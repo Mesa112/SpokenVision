@@ -23,7 +23,37 @@ def load_qwen_captioning_model():
     qwen_model.eval()
     return qwen_model
 
-def generate_qwen_caption(frame, qwen_model):
+def generate_qwen_caption(frame, qwen_model, input=""):
+    if input == "":
+        text = """
+            Describe the image
+            
+            Be specific about where things are using natural 
+            spatial language (left, right, behind, on the wall to your left, etc.).
+
+            Do not say “in the image,” “just so you know,” 
+            “it looks like,” or other filler phrases. Get straight to the point.
+
+            Clearly describe walls, doors, furniture, 
+            or objects with reference to their positions.
+
+            Keep the tone natural but focused. 
+            Use short, informative sentences.
+        """
+    else:
+        text = f"""
+            Describe the image
+
+            Focus on the user request: {input}
+
+            Be specific about where things are using natural 
+            spatial language (left, right, behind, on the wall to your left, etc.).
+ 
+            Only describe what’s necessary to help the user. 
+            Do not add unrelated details.   
+
+            Use short, informative sentences.
+        """
     conversation = [
         {
             "role": "user",
@@ -31,7 +61,7 @@ def generate_qwen_caption(frame, qwen_model):
                 {
                     "type": "image",
                 },
-                {"type": "text", "text": "Describe this image."},
+                {"type": "text", "text": text},
             ],
         }
     ]

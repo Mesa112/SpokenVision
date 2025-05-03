@@ -3,7 +3,7 @@ import cv2
 from collections import defaultdict
 
 class ContextBuilder:
-    def __init__(self, proximity_threshold=0.2, depth_cutoffs=[0.3, 0.6, 0.9]):
+    def __init__(self, proximity_threshold=0.2, depth_cutoffs=[0.1, 0.25, 0.4, 0.6, 0.75, 0.9]):
         """
         Initialize the context builder with configurable parameters.
         
@@ -41,7 +41,8 @@ class ContextBuilder:
             spatial_relationships, 
             caption
         )
-        
+        # print("objects_with_positions:", objects_with_positions)
+        # print("spatial_relationships:", spatial_relationships)
         return scene_description
     
     def _process_objects(self, detection_results, depth_map):
@@ -85,15 +86,24 @@ class ContextBuilder:
                 print(f"Error getting depth for object: {e}")
                 avg_depth = 0.5
             
-            # Categorize depth
-            if avg_depth < self.depth_cutoffs[0]:
-                depth_category = "very close"
-            elif avg_depth < self.depth_cutoffs[1]:
-                depth_category = "close"
-            elif avg_depth < self.depth_cutoffs[2]:
-                depth_category = "medium distance"
-            else:
-                depth_category = "far away"
+            # Categorize depth, higher depth means closer to camera
+            depth_categories = ["very far", "far", "medium-far", "medium", "medium-close", "close", "very close"]
+            #print("avg_depth:", avg_depth)
+            for depth, category in zip(self.depth_cutoffs, depth_categories):
+                if avg_depth < depth:
+                    depth_category = category
+                    break
+            # if avg_depth < self.depth_cutoffs[0]:
+            #     #depth_category = "very close"
+            #     depth_category = "very far"
+            # elif avg_depth < self.depth_cutoffs[1]:
+            #     #depth_category = "close"
+            #     depth_category = "far"
+            # elif avg_depth < self.depth_cutoffs[2]:
+            #     depth_category = "medium distance"
+            # else:
+            #     #depth_category = "far away"
+            #     depth_category = "close"
                 
             # Determine position in frame (using 3x3 grid)
             frame_height, frame_width = depth_map.shape[:2]
@@ -189,8 +199,15 @@ class ContextBuilder:
                 
                 # Check if one object is in front of another
                 depth_diff = abs(obj1["depth"] - obj2["depth"])
-                if depth_diff > 0.2:  # Significant depth difference
-                    if obj1["depth"] < obj2["depth"]:
+
+                # Ensure they share at least one position label
+                obj1_positions = set(obj1["position"].split())  
+                obj2_positions = set(obj2["position"].split()) 
+                shared_positions = obj1_positions & obj2_positions
+
+                if depth_diff > 0.2 and shared_positions:  # Significant depth difference and shared position
+                    #if obj1["depth"] < obj2["depth"]:
+                    if obj1["depth"] > obj2["depth"]: #higher depth means closer to camera
                         relationships["depth_order"].append((obj1["label"], "in front of", obj2["label"]))
                     else:
                         relationships["depth_order"].append((obj2["label"], "in front of", obj1["label"]))
