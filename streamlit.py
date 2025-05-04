@@ -14,6 +14,7 @@ import threading
 import pygame
 import queue
 
+backend_server_url = "https://0416-2600-1017-a410-36b8-2357-52be-1318-959b.ngrok-free.app"
 
 response_queue = queue.Queue() #For thread-safe communication between threads
 
@@ -64,7 +65,14 @@ def sendToBackend(frame, audio = None):
     try:
         # Save current frame to disk
         cv2.imwrite("frame.jpg", frame)
-
+ 
+        # Print image information
+        st.write("Image Information:")
+        st.write(f"Image Shape: {frame.shape}")  # Print the shape (height, width, channels)
+        st.write(f"Image Size: {frame.size} bytes")  # Print the size of the image
+        st.write(f"Image Data Type: {frame.dtype}")  # Print the data type of the image
+        st.image(frame, channels="BGR", caption="Captured Frame")  # Display the image in Streamlit
+        
         # Create an empty audio file (1 second of silence if needed)
         empty_audio_path = "input.mp3"
         if not os.path.exists(empty_audio_path):
@@ -76,9 +84,9 @@ def sendToBackend(frame, audio = None):
                 "image": ("frame.jpg", img, "image/jpeg"),
                 "audio": ("input.mp3", audio, "audio/mpeg")
             }
-
-            response = requests.post("http://localhost:8000/process/", files=files)
-            #response = requests.post("https://8047-2600-1017-a410-36b8-2357-52be-1318-959b.ngrok-free.app/process/", files=files)
+            # Send the request to the backend server
+            #response = requests.post("http://localhost:8000/process/", files=files)
+            response = requests.post(backend_server_url + "/process/", files=files)
             
             if response.status_code == 200: #If the request was successful
                 st.success("Frame sent successfully!")
@@ -87,7 +95,6 @@ def sendToBackend(frame, audio = None):
                 st.error(f"Failed: {response.status_code} - {response.text}")
     except Exception as e:
         st.error(f"Error sending frame: {e}")
-
 
 # Setup
 if "last_frame" not in st.session_state:
@@ -146,6 +153,8 @@ def main():
             st.session_state.cap = cap
             st.session_state.streaming = True
             st.session_state.paused = False
+
+            threading.Thread(target=sendToBackend, args=(None,), daemon=True).start()
     else:
         cap = st.session_state.cap
 
@@ -168,7 +177,7 @@ def main():
                 if "audio_base64" in response:
                     threading.Thread(target=playAudio, args=(response["audio_base64"],), daemon=True).start()
                     if not st.session_state.paused:
-                        threading.Thread(target=sendToBackend, args=(st.session_state.last_frame,), daemon=True).start() #auto play
+                        threading.Thread(target=sendToBackend, args=(st.session_state.last_frame,), daemon=True).start() #auto send after receiving audio
 
             if not st.session_state.paused:
                 ret, frame = cap.read()
@@ -199,6 +208,13 @@ def main():
             
     except Exception as e:
         st.error(f"Error: {e}")
+
+    finally:
+        # Release resources on exit
+        if 'cap' in st.session_state:
+            st.session_state.cap.release()
+        st.session_state.running = False
+        st.stop()
 
 if __name__ == "__main__":
     main()

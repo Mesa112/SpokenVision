@@ -20,6 +20,9 @@ from kokoro_audio import text_to_audio, load_kokoro_model
 from qwen_captioning import load_qwen_captioning_model, generate_qwen_caption
 from context_builder import ContextBuilder
 
+from PIL import Image
+import io
+
 # Hosting the server locally:
 # uvicorn server:app --host 0.0.0.0 --port 8000
 # ngrok http 8000 (seprate terminal, for public hosting. Need to install ngrok first)
@@ -123,6 +126,21 @@ async def process_files(
     audio: Optional[UploadFile] = File(None)  # Optional audio file
 ):
     print("Received input files.")
+    #print img info
+    # # Read the image content into memory
+    # image_bytes = await image.read()
+    
+    # # Open the image using PIL (Pillow)
+    # image = Image.open(io.BytesIO(image_bytes))  # Convert bytes to image
+    
+    # # Get image information
+    # image_format = image.format  # e.g. "JPEG", "PNG", etc.
+    # image_size = len(image_bytes)  # Size of the image in bytes
+    # image_width, image_height = image.size  # Width and Height of the image
+
+    # print(f"Image Format: {image_format}")
+    # print(f"Image Size: {image_size} bytes")
+    # print(f"Image Dimensions: {image_width}x{image_height}")
     try:
         contents = await image.read()
         nparr = np.frombuffer(contents, np.uint8)
