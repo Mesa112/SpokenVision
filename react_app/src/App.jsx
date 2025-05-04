@@ -1,42 +1,33 @@
 
-import { useState } from 'react'
-
+import { useState, useEffect, useRef } from 'react'
+import WebcamViewer from '../components/webcamViewer.jsx'
 
 function App() {
-
   //create react state variables image and message
   const [image, setImage] = useState(null);
   const [message, setMessage] = useState("");
-
+  const webcamRef = useRef();
 
   //runs when user selects a file
   const handleFileChange = (event) => {
-
     setImage(event.target.files[0]) //just one
-
   };
 
   //runs when user submits file
   const handleSubmit = async (event) => {
-
     event.preventDefault() //no refresh
-
     if (!image || !image.type.startsWith('image/')) { //checks to see if an image type was uploaded
-
-          alert("That's not an image")
-          return
+      alert("That's not an image")
+      return
     }
    
     const uploadData = new FormData()  //
     uploadData.append('image', image) //create JS object, then send to backend shown below VV
 
     try {
-      
       const response = await fetch('http://localhost:5000/upload', {
-
-            method: 'POST',
-            body: uploadData
-
+        method: 'POST',
+        body: uploadData
       }); 
 
       const imageDescription = await response.json()
@@ -49,19 +40,21 @@ function App() {
       // audio.play()
 
     } catch (error) {
-        console.error('Upload failed:', error)
-        setMessage("Failed to process image.")
+      console.error('Upload failed:', error)
+      setMessage("Failed to process image.")
     };
-
   }
+
+
+  const handleCapture = async (data) => {
+    console.log("Backend responded with:", data);
+  };
 
   return (
     
     //Tailwind template from creative-tim.com
     <div className="h-screen flex">
-
     {/*------------------------ LEFT SIDE: background + heading ---------------------------------*/}
-
     <div
       className="hidden lg:flex w-full lg:w-1/2 justify-around items-center bg-cover bg-center"
       style={{
@@ -69,51 +62,35 @@ function App() {
       }}
     >
       <div className="text-center text-white space-y-6 px-12">
-
         <h1 className="text-4xl font-bold">Clear View MVP</h1>
         <p className="text-white text-lg">Upload and listen to your environment</p>
-
       </div>
     </div>
     
     {/* ---------------------------RIGHT SIDE: upload form ----------------------------------------*/}
 
     <div className="flex w-full lg:w-1/2 justify-center items-center bg-gray-900">
-
+      <WebcamViewer ref={webcamRef} onCapture={handleCapture} />
       <form onSubmit={handleSubmit} className="bg-gray-800 text-white rounded-lg shadow-2xl p-8 w-full max-w-md space-y-6">
-
-              <h2 className="text-xl font-semibold text-center text-blue-400">Upload an Image</h2>
-
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="w-full bg-gray-700 text-white border border-gray-600 rounded px-3 py-2 text-sm"
-                />
-
-              <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded transition">
-
-                Submit {/* Submit */ }
-
-              </button>
-
-              {message && (
-
-                <div className="mt-4 text-red-400 text-sm text-center">
-                  <strong>Feedback:</strong> {message}
-                </div>
-                
-              )}
-
+        <h2 className="text-xl font-semibold text-center text-blue-400">Upload an Image</h2>
+        <input
+          type="file"
+          accept="image/*"
+          onChange={handleFileChange}
+          className="w-full bg-gray-700 text-white border border-gray-600 rounded px-3 py-2 text-sm"
+          />
+        <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded transition">
+          Submit {/* Submit */ }
+        </button>
+        {message && (
+          <div className="mt-4 text-red-400 text-sm text-center">
+            <strong>Feedback:</strong> {message}
+          </div>
+        )}
       </form>
-
     </div>
-
   </div>
-
 );
-  
-
 }
 
 export default App

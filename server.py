@@ -1,5 +1,6 @@
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import JSONResponse, FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import numpy as np
 import tempfile
@@ -38,9 +39,15 @@ import io
 
 app = FastAPI()
 
-###
-###
-### Preloading
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=['*'],  # or ["*"] for all, but not recommended in prod. Set to hosted url later
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 load_dotenv()
 
 # Load models on startup
@@ -126,21 +133,6 @@ async def process_files(
     audio: Optional[UploadFile] = File(None)  # Optional audio file
 ):
     print("Received input files.")
-    #print img info
-    # # Read the image content into memory
-    # image_bytes = await image.read()
-    
-    # # Open the image using PIL (Pillow)
-    # image = Image.open(io.BytesIO(image_bytes))  # Convert bytes to image
-    
-    # # Get image information
-    # image_format = image.format  # e.g. "JPEG", "PNG", etc.
-    # image_size = len(image_bytes)  # Size of the image in bytes
-    # image_width, image_height = image.size  # Width and Height of the image
-
-    # print(f"Image Format: {image_format}")
-    # print(f"Image Size: {image_size} bytes")
-    # print(f"Image Dimensions: {image_width}x{image_height}")
     try:
         contents = await image.read()
         nparr = np.frombuffer(contents, np.uint8)
