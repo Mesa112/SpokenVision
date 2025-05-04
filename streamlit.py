@@ -11,28 +11,68 @@ import requests
 import json
 import base64
 import threading
-
-
+import pygame
 import queue
+
+backend_server_url = "https://0416-2600-1017-a410-36b8-2357-52be-1318-959b.ngrok-free.app"
+
 response_queue = queue.Queue() #For thread-safe communication between threads
 
+# To keep track of ongoing threads
+send_thread = None
+
+# def playAudio(audio_base64):
+#     # Decode the base64 string into bytes
+#     audio_bytes = base64.b64decode(audio_base64)
+
+#     # Save to a file
+#     audio_path = "output_audio.wav"
+#     with open(audio_path, "wb") as f:
+#         f.write(audio_bytes)
+
+#     # Display audio player in Streamlit
+#     st.audio(audio_bytes, format="audio/wav")
+
 def playAudio(audio_base64):
+    """
+    Play audio file using pygame mixer.
+    
+    Args:
+        audio_path: Path to audio file
+    """
     # Decode the base64 string into bytes
     audio_bytes = base64.b64decode(audio_base64)
 
-    # Save to a file
-    audio_path = "output_audio.wav"
-    with open(audio_path, "wb") as f:
-        f.write(audio_bytes)
+    try:
+        # Write bytes to a temporary WAV file
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_audio:
+            temp_audio.write(audio_bytes)
+            temp_audio_path = temp_audio.name
 
-    # Display audio player in Streamlit
-    st.audio(audio_bytes, format="audio/wav")
+        # Initialize pygame mixer
+        pygame.mixer.init()
+        pygame.mixer.music.load(temp_audio_path)
+        pygame.mixer.music.play()
+
+        # Wait for playback to finish
+        while pygame.mixer.music.get_busy():
+            pygame.time.Clock().tick(10)
+
+    except Exception as e:
+        print(f"Error playing audio: {e}")
 
 def sendToBackend(frame, audio = None):
     try:
         # Save current frame to disk
         cv2.imwrite("frame.jpg", frame)
-
+ 
+        # Print image information
+        st.write("Image Information:")
+        st.write(f"Image Shape: {frame.shape}")  # Print the shape (height, width, channels)
+        st.write(f"Image Size: {frame.size} bytes")  # Print the size of the image
+        st.write(f"Image Data Type: {frame.dtype}")  # Print the data type of the image
+        st.image(frame, channels="BGR", caption="Captured Frame")  # Display the image in Streamlit
+        
         # Create an empty audio file (1 second of silence if needed)
         empty_audio_path = "input.mp3"
         if not os.path.exists(empty_audio_path):
@@ -44,9 +84,9 @@ def sendToBackend(frame, audio = None):
                 "image": ("frame.jpg", img, "image/jpeg"),
                 "audio": ("input.mp3", audio, "audio/mpeg")
             }
-
+            # Send the request to the backend server
             #response = requests.post("http://localhost:8000/process/", files=files)
-            response = requests.post("https://8804-2600-1017-a410-36b8-2357-52be-1318-959b.ngrok-free.app/process/", files=files)
+            response = requests.post(backend_server_url + "/process/", files=files)
             
             if response.status_code == 200: #If the request was successful
                 st.success("Frame sent successfully!")
@@ -56,8 +96,26 @@ def sendToBackend(frame, audio = None):
     except Exception as e:
         st.error(f"Error sending frame: {e}")
 
+# Setup
+if "last_frame" not in st.session_state:
+    st.session_state.last_frame = None
+if "paused" not in st.session_state:
+    st.session_state.paused = False
+
+# if not st.session_state.paused:
+#     threading.Thread(target=sendToBackend, args=(st.session_state.last_frame,), daemon=True).start()
+
+
+st.title("SpokenVision - Real-time Object Detection and Segmentation")
+
+def toggle_pause():
+    st.session_state.paused = not st.session_state.paused
+
+col1, col2 = st.columns(2)
+with col1:
+    st.button("Start" if st.session_state.paused else "Pause", on_click=toggle_pause)
+
 def main():
-    st.title("Real-time Object Detection and Segmentation")
     
     # Camera selection options
     camera_options = {
@@ -95,31 +153,10 @@ def main():
             st.session_state.cap = cap
             st.session_state.streaming = True
             st.session_state.paused = False
-            st.session_state.last_frame = None
+
+            threading.Thread(target=sendToBackend, args=(None,), daemon=True).start()
     else:
         cap = st.session_state.cap
-
-
-    # Initialize session state keys
-    if 'paused' not in st.session_state:
-        st.session_state.paused = False
-    if 'toggle_pressed' not in st.session_state:
-        st.session_state.toggle_pressed = False
-
-    def toggle_pause():
-        st.session_state.paused = not st.session_state.paused
-        st.session_state.toggle_pressed = True
-
-
-    # Button logic
-    col1, col2 = st.columns(2)
-    with col1:
-        st.button("Resume" if st.session_state.paused else "Pause", on_click=toggle_pause)
-
-    with col2:
-        if st.button("Send Frame") and st.session_state.last_frame is not None:
-            threading.Thread(target=sendToBackend, args=(st.session_state.last_frame,)).start()
-            #sendToBackend(st.session_state.last_frame)
 
     # Start camera feed
     try:
@@ -128,6 +165,20 @@ def main():
             return
         
         while True:
+
+            # # Always check and render server response
+            if not response_queue.empty():
+                response = response_queue.get()
+                st.markdown("### Server Response")
+
+                if "caption" in response:
+                    st.write("Caption:", response["caption"])
+
+                if "audio_base64" in response:
+                    threading.Thread(target=playAudio, args=(response["audio_base64"],), daemon=True).start()
+                    if not st.session_state.paused:
+                        threading.Thread(target=sendToBackend, args=(st.session_state.last_frame,), daemon=True).start() #auto send after receiving audio
+
             if not st.session_state.paused:
                 ret, frame = cap.read()
                 if not ret:
@@ -146,22 +197,24 @@ def main():
             # Display frame in Streamlit
             stframe.image(rgb_frame, channels="RGB", use_container_width=True)
             
-            # Display response if available
-            if not response_queue.empty():
-                response = response_queue.get()
-                st.markdown("### Server Response")
-
-                if "caption" in response:
-                    st.write("Caption:", response["caption"])
-
-                if "audio_base64" in response:
-                    playAudio(response["audio_base64"])
-                
+            # Start sending frame to backend only if no other thread is running
+            global send_thread
+            if not st.session_state.paused and send_thread is None:
+                send_thread = threading.Thread(target=sendToBackend, args=(frame,), daemon=True)
+                send_thread.start()
+            
             # Small delay to prevent high CPU usage
             time.sleep(0.05)
             
     except Exception as e:
         st.error(f"Error: {e}")
+
+    finally:
+        # Release resources on exit
+        if 'cap' in st.session_state:
+            st.session_state.cap.release()
+        st.session_state.running = False
+        st.stop()
 
 if __name__ == "__main__":
     main()

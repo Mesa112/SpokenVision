@@ -254,10 +254,6 @@ def run_camera_feed(camera_choice, camera_options, stop_button, stframe, record_
             if record_journey and video_writer is not None:
                 video_writer.write(blended_frame)
             
-<<<<<<< HEAD
-            # Display frame in Streamlit
-            stframe.image(rgb_frame, channels="RGB", use_container_width=True)
-=======
             # Audio descriptions
             if audio_enabled and time.time() - last_audio_time >= audio_interval:
                 generate_audio_description(frame, results, depth_map, segmentation_np if show_segmentation else None)
@@ -266,7 +262,6 @@ def run_camera_feed(camera_choice, camera_options, stop_button, stframe, record_
             # Convert BGR to RGB for display
             rgb_frame = cv2.cvtColor(blended_frame, cv2.COLOR_BGR2RGB)
             stframe.image(rgb_frame, channels="RGB", use_column_width=True)
->>>>>>> 3d07d9b (fianl update)
             
             time.sleep(0.05)
     
