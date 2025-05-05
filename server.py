@@ -201,6 +201,7 @@ async def process_files(
         wav_output_path = os.path.join(audio_output_dir, "audio_output.wav")
         with open(wav_output_path, "rb") as f:
             audio_bytes = f.read()
+            print(f"Size of audio (in bytes): {len(audio_bytes)} bytes")
             encoded_audio = base64.b64encode(audio_bytes).decode("utf-8")
 
         return JSONResponse(content={
