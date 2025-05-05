@@ -4,8 +4,6 @@ const WebcamViewer = forwardRef(({ onCapture }, ref) => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [isPaused, setIsPaused] = useState(false);
-  const [capturedImageURL, setCapturedImageURL] = useState(null);
-
 
   // Refs for real-time access inside async loops
   const isPausedRef = useRef(false);
@@ -22,13 +20,14 @@ const WebcamViewer = forwardRef(({ onCapture }, ref) => {
         videoRef.current.onloadeddata = () => {
           if (!isPausedRef.current) sendFrame();
         };
+
       } catch (err) {
         console.error('Error accessing webcam:', err);
       }
     };
 
     startCamera();
-
+    
     return () => {
       const stream = videoRef.current?.srcObject;
       stream?.getTracks().forEach(track => track.stop());
@@ -56,7 +55,7 @@ const WebcamViewer = forwardRef(({ onCapture }, ref) => {
         if (blob) {
           resolve(blob);
         }
-      }, 'image/jpeg', 0.9);
+      }, 'image/jpeg', 1);
     });
   };
 
@@ -75,7 +74,7 @@ const WebcamViewer = forwardRef(({ onCapture }, ref) => {
     formData.append('image', blob, 'frame.jpg');
 
     try {
-      const response = await fetch('https://0416-2600-1017-a410-36b8-2357-52be-1318-959b.ngrok-free.app/process/', {
+      const response = await fetch('https://f910-2600-1017-a410-36b8-2357-52be-1318-959b.ngrok-free.app/process/', {
         method: 'POST',
         body: formData,
       });
@@ -120,22 +119,12 @@ useImperativeHandle(ref, () => ({
         autoPlay
         playsInline
         muted
-        width="640"
-        height="480"
-        style={{ border: '1px solid black' }}
       />
-      <button onClick={togglePause} style={{ marginTop: '10px', padding: '10px', backgroundColor: '#007BFF', color: 'white', border: 'none', borderRadius: '5px' }}>
+      <button onClick={togglePause} style={{ fontSize: "16px", marginTop: '20px', padding: '10px 15px', backgroundColor: '#007BFF', color: 'white', border: 'none', borderRadius: '5px' }}>
         {isPaused ? 'Resume' : 'Pause'}
       </button>
 
       <canvas ref={canvasRef} style={{ display: 'none' }} />
-
-      {capturedImageURL && (
-        <div style={{ marginTop: '10px' }}>
-          <p>Captured Frame:</p>
-          <img src={capturedImageURL} alt="Captured Frame" width="320" />
-        </div>
-      )}
     </div>
   );
 });
