@@ -8,8 +8,84 @@ function App() {
   const [image, setImage] = useState(null);
   const [message, setMessage] = useState("");
   const [captions, setCaptions] = useState([]);
-  const webcamRef = useRef();
   const [currentAudio, setCurrentAudio] = useState(null); 
+
+  const webcamRef = useRef(null);
+  const [isPaused, setIsPaused] = useState(false);
+  const isProcessingRef = useRef(false); 
+  const isPausedRef = useRef(isPaused); //for tracking in async functions
+
+
+  const sendFrame = async () => {
+    console.log("SENDING")
+    if (isPaused || isProcessingRef.current) return;
+  
+    isProcessingRef.current = true;
+  
+    const blob = await webcamRef.current.captureNow();
+    if (!blob) {
+      isProcessingRef.current = false;
+      return;
+    }
+  
+    const formData = new FormData();
+    formData.append('image', blob, 'frame.jpg');
+  
+    try {
+      const response = await fetch('https://f910-2600-1017-a410-36b8-2357-52be-1318-959b.ngrok-free.app/process/', {
+        method: 'POST',
+        body: formData,
+      });
+  
+      const data = await response.json();
+      console.log("Response from server:", data);
+      handleResponse(data);
+    } catch (err) {
+      console.error('Error sending frame:', err);
+    } finally {
+      isProcessingRef.current = false;
+    }
+  };
+
+  useEffect(() => {
+    isPausedRef.current = isPaused;
+  }, [isPaused]);
+
+  //runs every second to send frames to server unless paused or already waiting for a response
+  useEffect(() => {
+    if (isPaused) return;
+
+    const intervalId = setInterval(() => {
+      if (!isProcessingRef.current) {
+        sendFrame();
+      }
+    }, 1000); // 1 frame per second.
+  
+    return () => clearInterval(intervalId);
+  }, [isPaused]);
+
+  // Called once when video is loaded to start sending frames
+  const handleCameraReady = () => {
+    setIsPaused(false);
+    if (!isPaused) {
+      sendFrame();
+    }
+  };
+
+  const togglePause = () => {
+    setIsPaused(prev => {
+      const newPaused = !prev;
+      
+      if (newPaused) {
+        webcamRef.current.pauseStream(); // pause video
+        stopAudio();
+      } else {
+        webcamRef.current.resumeStream(); // resume video
+      }
+  
+      return newPaused;
+    });
+  };
 
   //runs when user selects a file
   const handleFileChange = (event) => {
@@ -48,19 +124,26 @@ function App() {
     };
   }
 
-  const playAudio = (audio) => {
-    if (currentAudio && currentAudio !== audio) {
+  const stopAudio = () => {
+    if (currentAudio) {
       currentAudio.pause(); // Pause the currently playing audio
       currentAudio.currentTime = 0; // Reset playback to the beginning
+      setCurrentAudio(null); // Clear the current audio reference
     }
+  }
+  const playAudio = (audio) => {
+    stopAudio()
     audio.play().catch(err => console.warn("Autoplay failed:", err));
     setCurrentAudio(audio); // Set the current audio to the new one
   };
 
-  const handleCapture = async (data) => {
-    console.log("data info (captionlength, audiolength): ", data.caption.length, data.audio_base64.length)
-    console.log("Backend responded with:", data);
-
+  //handles response from server
+  //plays audio and appends caption to the list of captions UNLESS paused
+  const handleResponse = async (data) => {
+    if (isPausedRef.current) {
+      console.log("Ignored response, video is paused.");
+      return;
+    }
     //auto play audio
     const audio = new Audio(`data:audio/wav;base64,${data.audio_base64}`);
     playAudio(audio) //autoplay audio from server
@@ -91,8 +174,13 @@ function App() {
     <div className="flex flex-col w-full lg:w-2/3 justify-center items-center bg-gray-900" id = "rightContainer">
       <h1 className="text-4xl font-bold text-white mb-6">Clear View MVP</h1>
       {/* Webcam component */}
-      <WebcamViewer ref={webcamRef} onCapture={handleCapture} />
-
+      <WebcamViewer ref={webcamRef} onCapture={handleCameraReady} />
+      <button
+        onClick={togglePause}
+        style={{ fontSize: "16px", marginTop: '20px', padding: '10px 15px', backgroundColor: '#007BFF', color: 'white', border: 'none', borderRadius: '5px' }}
+      >
+        {isPaused ? 'Resume' : 'Pause'}
+      </button>
       {/* <form onSubmit={handleSubmit} className="bg-gray-800 text-white rounded-lg shadow-2xl p-8 w-full max-w-md space-y-6">
         <h2 className="text-xl font-semibold text-center text-blue-400">Upload an Image</h2>
         <input
