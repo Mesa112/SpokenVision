@@ -9,6 +9,7 @@ function App() {
   const [message, setMessage] = useState("");
   const [captions, setCaptions] = useState([]);
   const webcamRef = useRef();
+  const [currentAudio, setCurrentAudio] = useState(null); 
 
   //runs when user selects a file
   const handleFileChange = (event) => {
@@ -47,16 +48,25 @@ function App() {
     };
   }
 
+  const playAudio = (audio) => {
+    if (currentAudio && currentAudio !== audio) {
+      currentAudio.pause(); // Pause the currently playing audio
+      currentAudio.currentTime = 0; // Reset playback to the beginning
+    }
+    audio.play().catch(err => console.warn("Autoplay failed:", err));
+    setCurrentAudio(audio); // Set the current audio to the new one
+  };
 
   const handleCapture = async (data) => {
+    console.log("data info (captionlength, audiolength): ", data.caption.length, data.audio_base64.length)
     console.log("Backend responded with:", data);
 
     //auto play audio
     const audio = new Audio(`data:audio/wav;base64,${data.audio_base64}`);
-    audio.play().catch(err => console.warn("Autoplay failed:", err));
+    playAudio(audio) //autoplay audio from server
 
     const timestamp = new Date().toLocaleTimeString(); //get current time
-    setCaptions(prev => [{ caption: data.caption, timestamp }, ...prev]); //appends new caption to the list of captions
+    setCaptions(prev => [{ caption: data.caption, audio, timestamp }, ...prev]); //appends new caption to the list of captions
   };
 
   return (
@@ -113,6 +123,20 @@ function App() {
           }}>
             <p><strong>{item.timestamp}</strong></p>
             <p>{item.caption}</p>
+            <button
+              onClick={() => playAudio(item.audio)} // Call playAudio with the specific audio object
+              style={{ 
+                fontSize: "16px", 
+                marginTop: '20px', 
+                padding: '10px 15px', 
+                backgroundColor: '#007BFF', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '5px'
+              }}
+            >
+              Play Audio
+            </button>
           </div>
         ))}
       </div>
