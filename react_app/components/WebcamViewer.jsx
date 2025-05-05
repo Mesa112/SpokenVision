@@ -17,6 +17,11 @@ const WebcamViewer = forwardRef(({ onCapture }, ref) => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         videoRef.current.srcObject = stream;
+
+        // Wait for the video to load and then call sendFrame
+        videoRef.current.onloadeddata = () => {
+          if (!isPausedRef.current) sendFrame();
+        };
       } catch (err) {
         console.error('Error accessing webcam:', err);
       }
@@ -35,18 +40,6 @@ const WebcamViewer = forwardRef(({ onCapture }, ref) => {
     isPausedRef.current = isPaused;
   }, [isPaused]);
 
-  // Once video is ready, start the send loop
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const handleLoaded = () => {
-      if (!isPausedRef.current) sendFrame();
-    };
-
-    video.addEventListener('loadeddata', handleLoaded);
-    return () => video.removeEventListener('loadeddata', handleLoaded);
-  }, []);
 
   const captureFrame = () => {
     const video = videoRef.current;
