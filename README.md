@@ -7,11 +7,11 @@
 ## 🔍 Key Features
 
 - Real-time object detection (YOLOv8)
-- Depth estimation using MiDaS or DPT
+- Depth estimation using MiDaS
 - Scene captioning using BLIP or Qwen
 - Natural language understanding (ChatGPT integration)
-- Audio synthesis using Kokoro TTS
-- Frontend using Streamlit
+- Audio synthesis using gTTS (Google Text-to-Speech)
+- Frontend using React.js
 
 ---
 
